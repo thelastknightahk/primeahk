@@ -1,8 +1,7 @@
 import 'package:balance/core/database/database.dart';
 import 'package:balance/core/database/tables/groups.dart';
 import 'package:drift/drift.dart'; 
-import 'package:injectable/injectable.dart';
-import 'package:uuid/uuid.dart';
+import 'package:injectable/injectable.dart'; 
 
 part 'groups_dao.g.dart';
 

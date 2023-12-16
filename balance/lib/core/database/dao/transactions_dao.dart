@@ -1,5 +1,5 @@
 import 'package:balance/core/database/database.dart';
-import 'package:balance/core/database/tables/groups.dart'; 
+import 'package:balance/core/database/tables/groups.dart';
 import 'package:balance/core/database/tables/transactions.dart';
 import 'package:drift/drift.dart';
 import 'package:injectable/injectable.dart';
@@ -13,7 +13,8 @@ class TransactionsDao extends DatabaseAccessor<Database>
     with _$TransactionsDaoMixin {
   TransactionsDao(super.db);
 
-  Future insertTransaction(DateTime createdAt, String groupID, int amt, bool income) {
+  Future insertTransaction(
+      DateTime createdAt, String groupID, int amt, bool income) {
     return into(transactions).insert(TransactionsCompanion.insert(
         id: const Uuid().v1(),
         createdAt: createdAt,
@@ -22,21 +23,14 @@ class TransactionsDao extends DatabaseAccessor<Database>
         amount: Value(amt)));
   }
 
-  Future updateTransactionAmt(String transactionID, String groupID, int updAmt) {
-    
-    final companion = TransactionsCompanion(amount: Value(updAmt));
-    return (update(transactions)..where((tbl) => tbl.id.equals(transactionID)))
-        .write(companion);
+  Future<void> updateTransactionAmt(
+      String transactionID, String groupID, int updAmt) async {
+    await (update(transactions)..where((tbl) => tbl.id.equals(transactionID)))
+        .write(TransactionsCompanion(amount: Value(updAmt)));
   }
 
-  Stream<List<Transaction>> watch() => select(transactions).watch();
-
-  Stream<List<Transaction>> watchGroupTransactions(String groupId) {
-    return (select(transactions)..where((tbl) => tbl.groupId.equals(groupId)))
-        .watch();
-  }
-
-  Future<List<Transaction>> getTransactionList(String groupID) async{
-    return (select(transactions)..where((tbl) => tbl.groupId.equals(groupID))).get();
+  Future<List<Transaction>> getTransactionList(String groupID) async {
+    return (select(transactions)..where((tbl) => tbl.groupId.equals(groupID)))
+        .get();
   }
 }

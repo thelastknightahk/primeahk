@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:balance/core/application/transactions/trans_state.dart';
 import 'package:balance/core/database/dao/transactions_dao.dart';
 import 'package:balance/core/models/trans_model.dart';
@@ -9,9 +7,9 @@ import 'package:uuid/uuid.dart';
 
 class TransNotifier extends StateNotifier<TransState> {
   TransNotifier() : super(TransState());
-    final TransactionsDao _transactionsDao = getIt.get<TransactionsDao>();
+  final TransactionsDao _transactionsDao = getIt.get<TransactionsDao>();
   Future<void> addTrans(TransModel transModel) async {
-  await  _transactionsDao.insertTransaction(transModel.transDate!,
+    await _transactionsDao.insertTransaction(transModel.transDate!,
         transModel.transGroupID, transModel.transAmt, transModel.transIncome);
     state = state.copyWith(trasList: [
       ...state.trasList,
@@ -25,25 +23,25 @@ class TransNotifier extends StateNotifier<TransState> {
   }
 
   Future<void> updTrans(TransModel transModel) async {
-   await  _transactionsDao.updateTransactionAmt(
+    getTransList(transModel.transGroupID);
+    await _transactionsDao.updateTransactionAmt(
         transModel.transID, transModel.transGroupID, transModel.transAmt);
-          print(
-                                  "UpdAHK1______________________________>   }");
+
     List<TransModel> transList = [];
     transList.addAll(state.trasList);
     for (var i = 0; i < transList.length; i++) {
-      if (transList[i].transID.toString().trim() == transModel.transID.toString().trim()) {
+      if (transList[i].transID.toString().trim() ==
+          transModel.transID.toString().trim()) {
         transList[i] = transModel;
       }
     }
-    print("transdata ${transModel}");
-   
+
     state = state.copyWith(trasList: transList);
   }
 
-  Future<void> getTransList(String groupID) async {
+  Future<List<TransModel>> getTransList(String groupID) async {
     List<TransModel> transList = [];
-   await _transactionsDao.getTransactionList(groupID).then((value) {
+    await _transactionsDao.getTransactionList(groupID).then((value) {
       for (var data in value) {
         transList.add(TransModel(
             transID: data.id,
@@ -51,12 +49,10 @@ class TransNotifier extends StateNotifier<TransState> {
             transDate: data.createdAt,
             transGroupID: data.groupId,
             transIncome: data.incomeTrans));
-              log("transdata ${data.amount}");
       }
-       state = state.copyWith(trasList: transList);
-       
     });
-   
-   
+
+    state = state.copyWith(trasList: transList);
+    return transList;
   }
 }

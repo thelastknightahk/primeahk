@@ -32,11 +32,13 @@ class HomePage extends ConsumerWidget {
                 ),
                 TextButton(
                     onPressed: () {
-                      ref
+                     if(_controller.text.isNotEmpty){
+                       ref
                           .read(groupsNotifierProvider.notifier)
                           .addGroups(_controller.text);
 
                       _controller.text = "";
+                     }
                     },
                     child: const Text("Create")),
               ]),

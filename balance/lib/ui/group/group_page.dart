@@ -1,6 +1,7 @@
 import 'package:balance/core/models/trans_model.dart';
 import 'package:balance/core/provider/groups/group_provider.dart';
 import 'package:balance/core/provider/transactions/transaction_provider.dart';
+import 'package:balance/ui/group/widgets/update_trans_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -32,7 +33,7 @@ class GroupPageState extends ConsumerState<GroupPage> {
   @override
   Widget build(BuildContext context) {
     var groupData = ref.watch(groupsNotifierProvider).groupsModel;
-    var balance = ref.watch(groupsNotifierProvider).balance;
+
     var transList = ref.watch(transNotifierProvider).trasList;
     return Scaffold(
       appBar: AppBar(
@@ -83,10 +84,12 @@ class GroupPageState extends ConsumerState<GroupPage> {
                                   transGroupID: widget.groupId,
                                   transAmt: amount,
                                   transIncome: true));
-
+                          ref
+                              .read(transNotifierProvider.notifier)
+                              .getTransList(widget.groupId);
                           _incomeController.text = "";
                         },
-                        child: Text("Add income")),
+                        child: const Text("Add income")),
                   ]),
                   Row(children: [
                     Expanded(
@@ -117,63 +120,67 @@ class GroupPageState extends ConsumerState<GroupPage> {
                                   transGroupID: widget.groupId,
                                   transAmt: amount,
                                   transIncome: false));
+                          ref
+                              .read(transNotifierProvider.notifier)
+                              .getTransList(widget.groupId);
                           _expenseController.text = "";
                         },
-                        child: Text("Add expense")),
+                        child: const Text("Add expense")),
                   ]),
                 ],
               );
             },
           ),
+          const SizedBox(
+            height: 20,
+          ),
           Expanded(
             child: ListView.builder(
                 itemCount: transList.length,
-                itemBuilder: (context, index) => ListTile(
-                      title: Text(
-                          "${transList[index].transAmt.toString()} ${transList[index].transIncome.toString()}"),
-                      subtitle: InkWell(
-                          onTap: () async {
-                            var totalIncome = 0;
-                            var totalExpense = 0;
-                            for (var i = 0; i < transList.length; i++) {
-                              if (transList[i].transIncome) {
-                                totalIncome += transList[i].transAmt;
-                              }
-                              if (!transList[i].transIncome) {
-                                totalExpense += transList[i].transAmt;
-                              }
-                              print(
-                                  "UpdAHK______________________________> ${transList[i].transAmt} }");
-                            }
-
-                            Future.wait([
-                              Future.delayed(const Duration(milliseconds: 500),() async{
-                              await  ref.read(transNotifierProvider.notifier).updTrans(
-                                  TransModel(
-                                      transID: transList[index].transID,
-                                      transGroupID:
-                                          transList[index].transGroupID,
-                                      transAmt: 2,
-                                      transDate: transList[index].transDate,
-                                      transIncome:
-                                          transList[index].transIncome));
-                              }), 
-                              // Future.delayed(const Duration(milliseconds: 500), () async{
-                              //    await  ref
-                              //     .read(groupsNotifierProvider.notifier)
-                              //     .adjustBalance(
-                              //         totalIncome - (totalExpense - 2),
-                              //         widget.groupId);
-                              // })
-                           
-                            ]);
-
-                            print(
-                                "Upd______________________________> ${totalIncome} ${totalExpense}  ${totalIncome - (totalExpense - 2)}");
-                          },
-                          child: Text(transList[index].transDate.toString())),
-                      onTap: () {},
-                    )),
+                itemBuilder: (context, index) {
+                  return InkWell(
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return UpdateTransWidget(TransModel(
+                              transID: transList[index].transID,
+                              transGroupID: widget.groupId,
+                              transAmt: transList[index].transAmt,
+                              transDate: transList[index].transDate,
+                              transIncome: transList[index].transIncome));
+                        },
+                      );
+                    },
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 10, horizontal: 10),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                                width: 150,
+                                child: Text(
+                                  transList[index].transDate.toString(),
+                                  style: const TextStyle(
+                                      overflow: TextOverflow.ellipsis),
+                                )),
+                            const SizedBox(
+                              width: 20,
+                            ),
+                            Text(
+                              "\$ ${transList[index].transAmt.toString()}",
+                              style: TextStyle(
+                                  color: transList[index].transIncome
+                                      ? Colors.green
+                                      : Colors.red),
+                            )
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
           ),
         ],
       ),
