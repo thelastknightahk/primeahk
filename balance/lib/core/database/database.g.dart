@@ -243,6 +243,16 @@ class $TransactionsTable extends Transactions
       type: DriftSqlType.int,
       requiredDuringInsert: false,
       defaultValue: const Constant(0));
+  static const VerificationMeta _incomeTransMeta =
+      const VerificationMeta('incomeTrans');
+  @override
+  late final GeneratedColumn<bool> incomeTrans = GeneratedColumn<bool>(
+      'income_trans', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("income_trans" IN (0, 1))'),
+      defaultValue: const Constant(false));
   static const VerificationMeta _groupIdMeta =
       const VerificationMeta('groupId');
   @override
@@ -250,9 +260,10 @@ class $TransactionsTable extends Transactions
       'group_id', aliasedName, false,
       type: DriftSqlType.string,
       requiredDuringInsert: true,
-      $customConstraints: 'NOT NULL REFERENCES groups(id) ON DELETE CASCADE');
+      $customConstraints: 'NOT NULL REFERENCES "Groups"(id) ON DELETE CASCADE');
   @override
-  List<GeneratedColumn> get $columns => [id, createdAt, amount, groupId];
+  List<GeneratedColumn> get $columns =>
+      [id, createdAt, amount, incomeTrans, groupId];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -278,6 +289,12 @@ class $TransactionsTable extends Transactions
       context.handle(_amountMeta,
           amount.isAcceptableOrUnknown(data['amount']!, _amountMeta));
     }
+    if (data.containsKey('income_trans')) {
+      context.handle(
+          _incomeTransMeta,
+          incomeTrans.isAcceptableOrUnknown(
+              data['income_trans']!, _incomeTransMeta));
+    }
     if (data.containsKey('group_id')) {
       context.handle(_groupIdMeta,
           groupId.isAcceptableOrUnknown(data['group_id']!, _groupIdMeta));
@@ -299,6 +316,8 @@ class $TransactionsTable extends Transactions
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
       amount: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}amount'])!,
+      incomeTrans: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}income_trans'])!,
       groupId: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}group_id'])!,
     );
@@ -314,11 +333,13 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   final String id;
   final DateTime createdAt;
   final int amount;
+  final bool incomeTrans;
   final String groupId;
   const Transaction(
       {required this.id,
       required this.createdAt,
       required this.amount,
+      required this.incomeTrans,
       required this.groupId});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -326,6 +347,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     map['id'] = Variable<String>(id);
     map['created_at'] = Variable<DateTime>(createdAt);
     map['amount'] = Variable<int>(amount);
+    map['income_trans'] = Variable<bool>(incomeTrans);
     map['group_id'] = Variable<String>(groupId);
     return map;
   }
@@ -335,6 +357,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       id: Value(id),
       createdAt: Value(createdAt),
       amount: Value(amount),
+      incomeTrans: Value(incomeTrans),
       groupId: Value(groupId),
     );
   }
@@ -346,6 +369,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       id: serializer.fromJson<String>(json['id']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       amount: serializer.fromJson<int>(json['amount']),
+      incomeTrans: serializer.fromJson<bool>(json['incomeTrans']),
       groupId: serializer.fromJson<String>(json['groupId']),
     );
   }
@@ -356,16 +380,22 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       'id': serializer.toJson<String>(id),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'amount': serializer.toJson<int>(amount),
+      'incomeTrans': serializer.toJson<bool>(incomeTrans),
       'groupId': serializer.toJson<String>(groupId),
     };
   }
 
   Transaction copyWith(
-          {String? id, DateTime? createdAt, int? amount, String? groupId}) =>
+          {String? id,
+          DateTime? createdAt,
+          int? amount,
+          bool? incomeTrans,
+          String? groupId}) =>
       Transaction(
         id: id ?? this.id,
         createdAt: createdAt ?? this.createdAt,
         amount: amount ?? this.amount,
+        incomeTrans: incomeTrans ?? this.incomeTrans,
         groupId: groupId ?? this.groupId,
       );
   @override
@@ -374,13 +404,14 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           ..write('id: $id, ')
           ..write('createdAt: $createdAt, ')
           ..write('amount: $amount, ')
+          ..write('incomeTrans: $incomeTrans, ')
           ..write('groupId: $groupId')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, createdAt, amount, groupId);
+  int get hashCode => Object.hash(id, createdAt, amount, incomeTrans, groupId);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -388,6 +419,7 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           other.id == this.id &&
           other.createdAt == this.createdAt &&
           other.amount == this.amount &&
+          other.incomeTrans == this.incomeTrans &&
           other.groupId == this.groupId);
 }
 
@@ -395,12 +427,14 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   final Value<String> id;
   final Value<DateTime> createdAt;
   final Value<int> amount;
+  final Value<bool> incomeTrans;
   final Value<String> groupId;
   final Value<int> rowid;
   const TransactionsCompanion({
     this.id = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.amount = const Value.absent(),
+    this.incomeTrans = const Value.absent(),
     this.groupId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -408,6 +442,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     required String id,
     required DateTime createdAt,
     this.amount = const Value.absent(),
+    this.incomeTrans = const Value.absent(),
     required String groupId,
     this.rowid = const Value.absent(),
   })  : id = Value(id),
@@ -417,6 +452,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Expression<String>? id,
     Expression<DateTime>? createdAt,
     Expression<int>? amount,
+    Expression<bool>? incomeTrans,
     Expression<String>? groupId,
     Expression<int>? rowid,
   }) {
@@ -424,6 +460,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       if (id != null) 'id': id,
       if (createdAt != null) 'created_at': createdAt,
       if (amount != null) 'amount': amount,
+      if (incomeTrans != null) 'income_trans': incomeTrans,
       if (groupId != null) 'group_id': groupId,
       if (rowid != null) 'rowid': rowid,
     });
@@ -433,12 +470,14 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       {Value<String>? id,
       Value<DateTime>? createdAt,
       Value<int>? amount,
+      Value<bool>? incomeTrans,
       Value<String>? groupId,
       Value<int>? rowid}) {
     return TransactionsCompanion(
       id: id ?? this.id,
       createdAt: createdAt ?? this.createdAt,
       amount: amount ?? this.amount,
+      incomeTrans: incomeTrans ?? this.incomeTrans,
       groupId: groupId ?? this.groupId,
       rowid: rowid ?? this.rowid,
     );
@@ -456,6 +495,9 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     if (amount.present) {
       map['amount'] = Variable<int>(amount.value);
     }
+    if (incomeTrans.present) {
+      map['income_trans'] = Variable<bool>(incomeTrans.value);
+    }
     if (groupId.present) {
       map['group_id'] = Variable<String>(groupId.value);
     }
@@ -471,6 +513,7 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
           ..write('id: $id, ')
           ..write('createdAt: $createdAt, ')
           ..write('amount: $amount, ')
+          ..write('incomeTrans: $incomeTrans, ')
           ..write('groupId: $groupId, ')
           ..write('rowid: $rowid')
           ..write(')'))

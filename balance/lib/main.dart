@@ -2,6 +2,7 @@ import 'package:balance/main.config.dart';
 import 'package:balance/router.dart';
 import 'package:flutter/material.dart';
 import 'package:get_it/get_it.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:injectable/injectable.dart';
 
 final getIt = GetIt.instance;
@@ -11,7 +12,7 @@ void setupModules() => getIt.init();
 
 void main() {
   setupModules();
-  runApp(const MyApp());
+  runApp(const ProviderScope(child:   MyApp()));
 }
 
 class MyApp extends StatelessWidget {
